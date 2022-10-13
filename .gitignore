@@ -11,3 +11,5 @@ include/
 bin/
 
 __pycache__/
+
+PasswordAssignment/

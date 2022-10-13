@@ -9,13 +9,6 @@ import numpy as np
 import random
 import datetime
 
-# To watch one of these scenes, run the following:
-# manimgl example_scenes.py OpeningManimExample
-# Use -s to skip to the end and just save the final frame
-# Use -w to write the animation to a file
-# Use -o to write it to a file and open it once done
-# Use -n <number> to skip ahead to the n'th animation of a scene.
-
 numWords = 6
 
 class PassphraseGenerator(Scene):
@@ -34,9 +27,9 @@ class PassphraseGenerator(Scene):
             remember and type.
         """)
 
-        #self.play(Write(intro_words))
-        #self.wait(5)
-        #self.play(FadeOut(intro_words))
+        self.play(Write(intro_words))
+        self.wait(5)
+        self.play(FadeOut(intro_words))
 
         current_date = datetime.datetime.now()
 
@@ -83,36 +76,75 @@ class PassphraseGenerator(Scene):
                 if splitLine[0] == roll:
                     answers[i] = splitLine
 
+        answerGroup = VGroup()
+
         for answer in answers:
-            answerGroup = VGroup()
-            prev = None
+            numberGroup = VGroup()
+            wordGroup = VGroup()
+            glowGroup =  VGroup()
+            prevNumber = None
             firstObject = None
             answerObject = None
+            numberObject = None
+            wordObject = None
+            answerNumber = 0
             for i in range(answer-5, answer+5):
-                animObject = Text(f"{fileArray[i]}")
+                splitAnswer = fileArray[i].split('\t')
+                numberObject = Text(f"{splitAnswer[0]}")
+                wordObject = Text(f"{splitAnswer[1]}")
                 if i == answer:
-                    answerObject = animObject
+                    answerObject = wordObject
+                    glowGroup.add(numberObject)
+                    answerNumber = splitAnswer[0]
                 if i == answer-5:
-                    firstObject = animObject
-                    animObject.shift(UP*3)
-                    answerGroup.add(animObject)
-                    prev = animObject
+                    firstObject = wordObject
+                    numberGroup.add(numberObject)
+                    prevNumber = numberObject
+                    wordGroup.add(wordObject)
+                    wordObject.next_to(numberObject, RIGHT)
                 else:
-                    animObject.next_to(prev, DOWN)
-                    answerGroup.add(animObject)
-                    prev = animObject
-            print(firstObject)
-            print(answerObject)
+                    numberObject.next_to(prevNumber, DOWN)
+                    wordObject.next_to(numberObject, RIGHT)
+                    numberGroup.add(numberObject)
+                    wordGroup.add(wordObject)
+                    prevNumber = numberObject
+            
+            numberGroup.shift(UP*3)
+            wordGroup.shift(UP*3)
+
             triangle = Triangle()
             triangle.set_height(0.5)
             triangle.next_to(firstObject)
-            self.play(Write(answerGroup))
-            self.wait(5)
-            self.play(FadeIn(triangle))
-            self.play(triangle.rotate, (PI*210)/180)
-            self.play(triangle.next_to, answerObject)
-            self.wait(5)
+            triangle.rotate((PI*210)/180)
 
+            glowGroup.add(diceGroupDict[answerNumber])
+
+            writeGroup = VGroup(numberGroup, wordGroup)
+            self.play(Write(writeGroup, runtime = 0.5))
+            self.play(FadeIn(triangle))
+            self.play(triangle.next_to, answerObject)
+            self.play(FadeToColor(glowGroup, BLUE))
+            self.play(FadeToColor(glowGroup, WHITE))
+            self.add(answerObject)
+            answerGroup.add(answerObject)
+            wordGroup.remove(answerObject)
+            fadeOutGroup = VGroup(numberGroup, wordGroup, triangle)
+            self.play(FadeOut(fadeOutGroup, runtime = 0.2))
+            self.play(answerObject.next_to, diceGroupDict[answerNumber])
+        
+        prev = answerObject
+        for object in answerGroup:
+            if object != answerObject:
+                self.play(object.next_to, prev)
+                prev = object
+
+        self.play(FadeOut(diceGroup))
+        self.play(answerGroup.move_to, [0,0,0])
+
+        passwordText = Text("Your passphrase is:")
+        passwordText.next_to(answerGroup, UP)
+
+        self.play(Write(passwordText))
 
 
 if __name__ == '__main__':
